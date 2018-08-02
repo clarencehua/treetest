@@ -10,7 +10,7 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
     init();
-    connect(ui->treeWidget,SIGNAL(itemChanged(QTreeWidgetItem*,int)),this,SLOT(treeItemChanged(QTreeWidgetItem*,int)));
+    connect(ui->treeWidget,SIGNAL(itemChanged(QTreeWidgetItem*,int)),this,SLOT(itemChangedSlot(QTreeWidgetItem*,int)));
 }
 
 Widget::~Widget()
@@ -54,6 +54,16 @@ void Widget::init()
     subItem112->setText(0,"subItem11");  //设置子项显示的文本
     subItem112->setCheckState(0,Qt::Unchecked); //设置子选项的显示格式和状态
 
+    QTreeWidgetItem* subItem113 = new QTreeWidgetItem(subItem112);
+    subItem113->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+    subItem113->setText(0,"subItem11");  //设置子项显示的文本
+    subItem113->setCheckState(0,Qt::Unchecked); //设置子选项的显示格式和状态
+
+    QTreeWidgetItem* subItem114 = new QTreeWidgetItem(subItem112);
+    subItem114->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+    subItem114->setText(0,"subItem11");  //设置子项显示的文本
+    subItem114->setCheckState(0,Qt::Unchecked); //设置子选项的显示格式和状态
+
     QTreeWidgetItem* subItem12 = new QTreeWidgetItem(group1);
     subItem12->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
     subItem12->setText(0,"subItem12");
@@ -87,96 +97,62 @@ void Widget::init()
     subItem23->setCheckState(0,Qt::Unchecked);
 }
 
-void Widget::treeItemChanged(QTreeWidgetItem* item, int column)
+
+void Widget::itemChangedSlot(QTreeWidgetItem* item, int column)
 {
-    //QString itemText = item->text(0);
-    if(Qt::Checked == item->checkState(0))
-    {
-        // QTreeWidgetItem* parent = item->parent();
-        int count = item->childCount(); //返回子项的个数
-        if(count >0)
-        {
-            for(int i=0; i<count; i++)
-            {
-                item->child(i)->setCheckState(0,Qt::Checked);
-            }
-            return;
-        }
-        else
-        {
-            updateParentItem(item);
-        }
-    }
-    else if(Qt::Unchecked == item->checkState(0))
-    {
-        int count = item->childCount();
-        if(count > 0)
-        {
-            for(int i=0; i<count; i++)
-            {
-                item->child(i)->setCheckState(0,Qt::Unchecked);
-            }
-            return;
-        }
-        else
-        {
-            updateParentItem(item);
-        }
-    }
+    if(Qt::PartiallyChecked!=item->checkState(0))
+        setChildCheckState(item,item->checkState(0));
+
+    if(Qt::PartiallyChecked==item->checkState(0))
+        if(!isTopItem(item))
+            item->parent()->setCheckState(0,Qt::PartiallyChecked);
 }
 
-void Widget::updateParentItem(QTreeWidgetItem* item)
+
+bool Widget::isTopItem(QTreeWidgetItem* item)
 {
+    if(!item) return false;
+    if(!item->parent()) return true;
+    return false;
+}
 
-
-    QTreeWidgetItem *parent = item->parent();
-    if(parent == NULL)
+void Widget::setChildCheckState(QTreeWidgetItem *item, Qt::CheckState cs)
+{
+    if(!item) return;
+    for (int i=0;i<item->childCount();i++)
     {
-        return ;
+        QTreeWidgetItem* child=item->child(i);
+        if(child->checkState(0)!=cs)
+        {
+            child->setCheckState(0, cs);
+        }
     }
-    int selectedCount = 0;
-    int noSelected=0;
-    int childCount = parent->childCount();
-    for(int i=0; i<childCount; i++) //判断有多少个子项被选中
+    setParentCheckState(item->parent());
+}
+
+void Widget::setParentCheckState(QTreeWidgetItem *item)
+{
+    if(!item) return;
+    int selectedCount=0;
+    int childCount = item->childCount();
+    for (int i=0;i<childCount;i++)
     {
-        QTreeWidgetItem* childItem = parent->child(i);
-        if(childItem->checkState(0) == Qt::Checked)
+        QTreeWidgetItem* child= item->child(i);
+        if(child->checkState(0)==Qt::Checked)
         {
             selectedCount++;
-        }else if(childItem->checkState(0) == Qt::Unchecked){
-            noSelected++;
         }
     }
-    if(selectedCount <= 0)  //如果没有子项被选中，父项设置为未选中状态
-    {
-        parent->setCheckState(0,Qt::Unchecked);
-    }
-    else if(selectedCount>0 && selectedCount<childCount)    //如果有部分子项被选中，父项设置为部分选中状态，即用灰色显示
-    {
-        parent->setCheckState(0,Qt::PartiallyChecked);
-    }
-    else if(selectedCount == childCount)    //如果子项全部被选中，父项则设置为选中状态
-    {
-        parent->setCheckState(0,Qt::Checked);
-    }
-    if (noSelected>0&&noSelected<childCount) {
-        parent->setCheckState(0,Qt::PartiallyChecked);
-    }
 
-    QTreeWidgetItem *parent1=item->parent()->parent();
-    if (parent1!=NULL) {
-//        if(parent->checkState(0)==Qt::PartiallyChecked){
-//            parent1->setCheckState(0,Qt::PartiallyChecked);
-//        }
-//        else if (parent->checkState(0)==Qt::Checked) {
-
-//             parent1->setCheckState(0,Qt::PartiallyChecked);
-//        }else {
-//            parent1->setCheckState(0,Qt::Unchecked);
-//        }
-        updateParentItem(item->parent());
+    if(selectedCount == 0) {
+        item->setCheckState(0,Qt::Unchecked);
+    } else if (selectedCount == childCount) {
+        item->setCheckState(0,Qt::Checked);
+    } else {
+        item->setCheckState(0,Qt::PartiallyChecked);
     }
 }
+
 
 void Widget::on_buttonSure_clicked()
 {

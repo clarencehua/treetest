@@ -17,10 +17,11 @@ public:
 
 public: //申明初始化函数
     void init();
-    void updateParentItem(QTreeWidgetItem* item);
-
+    void setChildCheckState(QTreeWidgetItem *item, Qt::CheckState cs);
+    void setParentCheckState(QTreeWidgetItem *item);
 public slots:   //申明信号与槽,当树形控件的子选项被改变时执行
-    void treeItemChanged(QTreeWidgetItem* item , int column);
+    void itemChangedSlot(QTreeWidgetItem* item , int column);
+    bool isTopItem(QTreeWidgetItem* item);
     void on_buttonSure_clicked();
 private:
     Ui::Widget *ui;
